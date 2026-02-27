@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - SMB Pinger{% endblock %}
+
+{% block content %}
+<h2>Admin</h2>
+
+<!-- Flash Messages -->
+{% if message %}
+<article class="{% if message_type == 'error' %}down-alert{% else %}success-alert{% endif %}">
+    {{ message }}
+</article>
+{% endif %}
+
+<!-- CSV Import -->
+<article>
+    <header><strong>Import Businesses from CSV</strong></header>
+    <p><small>CSV format: <code>name,url</code> (required), <code>category,address</code> (optional). Max 5MB, 10,000 rows.</small></p>
+    <form action="/admin/import" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit">Import CSV</button>
+    </form>
+</article>
+
+<!-- Add Business Form -->
+<article>
+    <header><strong>Add Business</strong></header>
+    <form action="/admin/business" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid">
+            <label>
+                Name *
+                <input type="text" name="name" required placeholder="Joe's Coffee">
+            </label>
+            <label>
+                URL *
+                <input type="url" name="url" required placeholder="https://joescoffee.com">
+            </label>
+        </div>
+        <div class="grid">
+            <label>
+                Category
+                <input type="text" name="category" placeholder="Coffee Shop">
+            </label>
+            <label>
+                Address
+                <input type="text" name="address" placeholder="123 State St, Santa Barbara">
+            </label>
+        </div>
+        <button type="submit">Add Business</button>
+    </form>
+</article>
+
+<!-- Business List -->
+<article>
+    <header><strong>All Businesses ({{ businesses|length }})</strong></header>
+    <figure>
+        <table role="grid">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Status</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for biz in businesses %}
+                <tr {% if not biz.is_active %}class="inactive-row"{% endif %}>
+                    <td>{{ biz.name }}</td>
+                    <td><a href="{{ biz.url }}" target="_blank" rel="noopener"><small>{{ biz.url }}</small></a></td>
+                    <td>
+                        {% if biz.current_status %}
+                            {% include "components/status_badge.html" %}
+                        {% else %}
+                            <small>&mdash;</small>
+                        {% endif %}
+                    </td>
+                    <td>{% if biz.is_active %}Yes{% else %}No{% endif %}</td>
+                    <td>
+                        {% if biz.is_active %}
+                        <form action="/admin/business/{{ biz.id }}/deactivate" method="post" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="outline secondary" style="padding:0.25rem 0.5rem; margin:0">
+                                Deactivate
+                            </button>
+                        </form>
+                        <form action="/admin/check/{{ biz.id }}" method="post" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="outline" style="padding:0.25rem 0.5rem; margin:0">
+                                Re-check
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="/admin/business/{{ biz.id }}/activate" method="post" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="outline" style="padding:0.25rem 0.5rem; margin:0">
+                                Activate
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No businesses yet. Import a CSV or add one above.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </figure>
+</article>
+{% endblock %}

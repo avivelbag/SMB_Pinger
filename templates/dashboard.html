@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SMB Pinger{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+{% block summary %}
+<div class="grid" id="summary-cards"
+     hx-get="/?partial=summary" hx-trigger="every 60s"
+     hx-swap="outerHTML">
+    <article>
+        <header>Total Sites</header>
+        <p class="stat-number">{{ summary.total }}</p>
+    </article>
+    <article>
+        <header>Up</header>
+        <p class="stat-number status-up">{{ summary.up }}</p>
+    </article>
+    <article>
+        <header>Down</header>
+        <p class="stat-number status-down">{{ summary.down }}</p>
+    </article>
+</div>
+{% endblock %}
+
+<!-- Currently Down Alert -->
+{% block down_alert %}
+{% if down_businesses %}
+<article class="down-alert" id="down-alert">
+    <header><strong>&#9888; Currently Down</strong></header>
+    <ul>
+        {% for biz in down_businesses %}
+        <li>
+            <a href="/business/{{ biz.id }}">{{ biz.name }}</a>
+            <small>({{ biz.current_status }}{% if biz.last_checked_at %} &mdash; last checked {{ biz.last_checked_at }}{% endif %})</small>
+        </li>
+        {% endfor %}
+    </ul>
+</article>
+{% endif %}
+{% endblock %}
+
+<!-- Business Table -->
+{% block business_table %}
+<div id="business-table-container"
+     hx-get="/?partial=table&sort={{ sort_by }}&order={{ sort_order }}&search={{ search }}&status={{ status_filter }}"
+     hx-trigger="every 120s"
+     hx-swap="outerHTML">
+    <div class="table-controls">
+        <input type="search" placeholder="Search businesses..."
+               name="search" value="{{ search }}"
+               hx-get="/" hx-trigger="input changed delay:300ms"
+               hx-target="#business-table-container" hx-swap="outerHTML"
+               hx-include="[name='status']"
+               hx-vals='{"partial": "table"}'>
+        <select name="status"
+                hx-get="/" hx-trigger="change"
+                hx-target="#business-table-container" hx-swap="outerHTML"
+                hx-include="[name='search']"
+                hx-vals='{"partial": "table"}'>
+            <option value="" {% if not status_filter %}selected{% endif %}>All</option>
+            <option value="up" {% if status_filter == 'up' %}selected{% endif %}>Up</option>
+            <option value="down" {% if status_filter == 'down' %}selected{% endif %}>Down</option>
+        </select>
+    </div>
+    <figure>
+        <table role="grid">
+            <thead>
+                <tr>
+                    {% macro sort_header(field, label) %}
+                    <th>
+                        <a href="/?sort={{ field }}&order={% if sort_by == field and sort_order == 'asc' %}desc{% else %}asc{% endif %}&search={{ search }}&status={{ status_filter }}"
+                           hx-get="/?partial=table&sort={{ field }}&order={% if sort_by == field and sort_order == 'asc' %}desc{% else %}asc{% endif %}&search={{ search }}&status={{ status_filter }}"
+                           hx-target="#business-table-container" hx-swap="outerHTML">
+                            {{ label }}
+                            {% if sort_by == field %}
+                                {% if sort_order == 'asc' %} &#9650;{% else %} &#9660;{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    {% endmacro %}
+                    {{ sort_header('name', 'Business') }}
+                    {{ sort_header('current_status', 'Status') }}
+                    {{ sort_header('uptime_24h', 'Uptime 24h') }}
+                    {{ sort_header('uptime_7d', 'Uptime 7d') }}
+                    {{ sort_header('last_checked_at', 'Last Check') }}
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for biz in businesses %}
+                <tr>
+                    <td>
+                        <a href="/business/{{ biz.id }}">{{ biz.name }}</a>
+                        {% if biz.category %}<br><small>{{ biz.category }}</small>{% endif %}
+                    </td>
+                    <td>
+                        {% include "components/status_badge.html" %}
+                    </td>
+                    <td>
+                        {% if biz.uptime_24h is not none %}
+                            {{ "%.1f"|format(biz.uptime_24h) }}%
+                        {% else %}
+                            &mdash;
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if biz.uptime_7d is not none %}
+                            {{ "%.1f"|format(biz.uptime_7d) }}%
+                        {% else %}
+                            &mdash;
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if biz.last_checked_at %}
+                            <small>{{ biz.last_checked_at }}</small>
+                        {% else %}
+                            &mdash;
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if biz.last_response_time_ms is not none %}
+                            {{ "%.0f"|format(biz.last_response_time_ms) }}ms
+                        {% else %}
+                            &mdash;
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6">No businesses found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </figure>
+</div>
+{% endblock %}
+{% endblock %}

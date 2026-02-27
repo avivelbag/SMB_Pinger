@@ -3,15 +3,21 @@ import logging.config
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from jinja2_fragments.fastapi import Jinja2Blocks
 
 from smb_pinger.check_cycle import check_all_sites
 from smb_pinger.config import Settings
 from smb_pinger.database import get_db, init_db
+from smb_pinger.routes.admin import create_admin_router
+from smb_pinger.routes.dashboard import router as dashboard_router
 from smb_pinger.scheduler import create_scheduler
+from smb_pinger.security import SecurityHeadersMiddleware
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -34,6 +40,11 @@ LOGGING_CONFIG = {
 }
 
 logger = logging.getLogger(__name__)
+
+# Resolve paths relative to project root
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
+STATIC_DIR = PROJECT_ROOT / "static"
 
 
 @asynccontextmanager
@@ -91,6 +102,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="SMB Pinger", lifespan=lifespan)
     app.state.settings = settings
 
+    # Templates
+    templates = Jinja2Blocks(directory=str(TEMPLATES_DIR))
+    app.state.templates = templates
+
+    # Static files
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    # Security middleware
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # Routes
+    app.include_router(dashboard_router)
+    app.include_router(create_admin_router(settings.admin_password_hash))
+
     @app.get("/health")
     async def health() -> JSONResponse:
         """Health check endpoint. Returns 503 if last check cycle is stale."""
@@ -102,7 +127,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 row = await cursor.fetchone()
 
             if row and row["last_check"]:
-                last_check = datetime.fromisoformat(row["last_check"]).replace(tzinfo=UTC)
+                last_check = datetime.fromisoformat(
+                    row["last_check"]
+                ).replace(tzinfo=UTC)
                 stale_threshold = datetime.now(UTC) - timedelta(minutes=30)
                 if last_check < stale_threshold:
                     return JSONResponse(

@@ -1,0 +1,10 @@
+{% set status = biz.current_status|default('unknown') %}
+{% if status == 'up' %}
+<span class="badge badge-up" role="status" aria-label="Status: Up">&#10003; Up</span>
+{% elif status == 'challenge_page' %}
+<span class="badge badge-warning" role="status" aria-label="Status: Challenge">&#9888; Challenge</span>
+{% elif status == 'unknown' %}
+<span class="badge badge-unknown" role="status" aria-label="Status: Unknown">&#8212; Unknown</span>
+{% else %}
+<span class="badge badge-down" role="status" aria-label="Status: Down">&#10007; Down</span>
+{% endif %}

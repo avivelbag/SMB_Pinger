@@ -1,0 +1,19 @@
+<div class="uptime-bar" role="img" aria-label="Uptime history for the last {{ hours|default(24) }} hours">
+    {% for slot in uptime_data %}
+    {% if slot.uptime_pct == 100 %}
+    <div class="uptime-segment uptime-good"
+         title="{{ slot.hour }}: {{ slot.uptime_pct }}% ({{ slot.checks }} checks)"></div>
+    {% elif slot.uptime_pct >= 50 %}
+    <div class="uptime-segment uptime-degraded"
+         title="{{ slot.hour }}: {{ slot.uptime_pct }}% ({{ slot.checks }} checks)"></div>
+    {% elif slot.uptime_pct > 0 %}
+    <div class="uptime-segment uptime-poor"
+         title="{{ slot.hour }}: {{ slot.uptime_pct }}% ({{ slot.checks }} checks)"></div>
+    {% else %}
+    <div class="uptime-segment uptime-down"
+         title="{{ slot.hour }}: {{ slot.uptime_pct }}% ({{ slot.checks }} checks)"></div>
+    {% endif %}
+    {% else %}
+    <div class="uptime-segment uptime-empty" title="No data"></div>
+    {% endfor %}
+</div>

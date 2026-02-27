@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="htmx-config" content='{"allowScriptTags": true}'>
+    <title>{% block title %}SMB Pinger{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/static/app.css">
+    <script>
+        // Prevent flash of wrong theme
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+</head>
+<body>
+    <header class="container">
+        <nav>
+            <ul>
+                <li><a href="/"><strong>SMB Pinger</strong></a></li>
+            </ul>
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/admin">Admin</a></li>
+                <li>
+                    <button id="theme-toggle" class="outline contrast" onclick="toggleTheme()" title="Toggle dark mode">
+                        <span id="theme-icon">&#9789;</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="container">
+        <small>SMB Pinger &mdash; Santa Barbara Small Business Website Monitor</small>
+    </footer>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    {% block scripts %}{% endblock %}
+    <script src="/static/app.js"></script>
+</body>
+</html>

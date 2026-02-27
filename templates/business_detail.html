@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ business.name }} - SMB Pinger{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ul>
+        <li><a href="/">Dashboard</a></li>
+        <li>{{ business.name }}</li>
+    </ul>
+</nav>
+
+<!-- Business Info Card -->
+<article>
+    <header>
+        <div class="business-header">
+            <h2>{{ business.name }}</h2>
+            {% set biz = business %}
+            {% include "components/status_badge.html" %}
+        </div>
+    </header>
+    <div class="grid">
+        <div>
+            <strong>URL:</strong> <a href="{{ business.url }}" target="_blank" rel="noopener">{{ business.url }}</a>
+        </div>
+        {% if business.category %}
+        <div><strong>Category:</strong> {{ business.category }}</div>
+        {% endif %}
+        {% if business.address %}
+        <div><strong>Address:</strong> {{ business.address }}</div>
+        {% endif %}
+    </div>
+    <div class="grid">
+        <div>
+            <strong>Uptime 24h:</strong>
+            {% if business.uptime_24h is not none %}{{ "%.2f"|format(business.uptime_24h) }}%{% else %}&mdash;{% endif %}
+        </div>
+        <div>
+            <strong>Uptime 7d:</strong>
+            {% if business.uptime_7d is not none %}{{ "%.2f"|format(business.uptime_7d) }}%{% else %}&mdash;{% endif %}
+        </div>
+        <div>
+            <strong>Uptime 30d:</strong>
+            {% if business.uptime_30d is not none %}{{ "%.2f"|format(business.uptime_30d) }}%{% else %}&mdash;{% endif %}
+        </div>
+    </div>
+    {% if business.last_checked_at %}
+    <small>Last checked: {{ business.last_checked_at }} &mdash;
+        {% if business.last_response_time_ms is not none %}
+            {{ "%.0f"|format(business.last_response_time_ms) }}ms
+        {% endif %}
+    </small>
+    {% endif %}
+</article>
+
+<!-- Time Range Selector -->
+<div class="time-range-selector">
+    <fieldset role="group">
+        <a href="/business/{{ business.id }}?hours=24"
+           class="{% if hours == 24 %}active{% endif %}" role="button">24h</a>
+        <a href="/business/{{ business.id }}?hours=168"
+           class="{% if hours == 168 %}active{% endif %}" role="button" class="outline">7d</a>
+        <a href="/business/{{ business.id }}?hours=720"
+           class="{% if hours == 720 %}active{% endif %}" role="button" class="outline">30d</a>
+    </fieldset>
+</div>
+
+<!-- Uptime Bar -->
+<article>
+    <header><strong>Uptime History</strong></header>
+    {% include "components/uptime_bar.html" %}
+</article>
+
+<!-- Response Time Chart -->
+<article>
+    <header><strong>Response Time</strong></header>
+    <canvas id="response-chart" height="200"></canvas>
+</article>
+
+<!-- Recent Checks Log -->
+<article>
+    <header><strong>Recent Checks</strong></header>
+    <figure>
+        <table role="grid">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Code</th>
+                    <th>Response</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in recent_checks %}
+                <tr>
+                    <td><small>{{ check.checked_at }}</small></td>
+                    <td>
+                        {% if check.is_up %}
+                        <span class="badge badge-up">&#10003; {{ check.result }}</span>
+                        {% else %}
+                        <span class="badge badge-down">&#10007; {{ check.result }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ check.status_code or '&mdash;' }}</td>
+                    <td>
+                        {% if check.response_time_ms is not none %}
+                            {{ "%.0f"|format(check.response_time_ms) }}ms
+                        {% else %}
+                            &mdash;
+                        {% endif %}
+                    </td>
+                    <td><small>{{ check.error or '' }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No checks recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </figure>
+</article>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+    const chartData = {{ response_time_data | tojson }};
+    initResponseChart(chartData);
+</script>
+{% endblock %}
