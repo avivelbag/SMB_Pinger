@@ -1,0 +1,25 @@
+[Unit]
+Description=SMB Pinger - Website Uptime Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=smbpinger
+Group=smbpinger
+WorkingDirectory=/opt/smb-pinger
+ExecStart=/opt/smb-pinger/.venv/bin/uvicorn smb_pinger.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+
+# Environment
+EnvironmentFile=/opt/smb-pinger/.env
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/smb-pinger
+
+[Install]
+WantedBy=multi-user.target
