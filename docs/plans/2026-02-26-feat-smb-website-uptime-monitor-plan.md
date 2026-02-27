@@ -1,7 +1,7 @@
 ---
 title: "feat: Santa Barbara Small Business Website Uptime Monitor"
 type: feat
-status: active
+status: completed
 date: 2026-02-26
 deepened: 2026-02-26
 origin: docs/brainstorms/2026-02-26-smb-pinger-brainstorm.md
